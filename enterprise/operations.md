@@ -19,11 +19,11 @@ $ curl https://$REVIEWABLE_FIREBASE.firebaseio.com/system/maintenance.json?auth=
 
 The switch itself is public and will be publicly visible to anyone who cares to check.  You may also specify a private message that will be displayed in the browser's modal overlay only for users who are signed in.  The message is in HTML, so you can embed links to internal status pages and such.  You can repeat this command as often as necessary to update the message.
 
-When maintenance mode is switched on, the servers will log `Entering maintenance mode`, immediately shut off datastore access, and exit at staggered (if `GAE_MODULE_INSTANCE` is set) or random intervals over the next minute to be restarted by the container.  After restarting, they'll log `Waiting for maintenance mode to end` and, once you turn maintenance mode off, `Exiting maintenance mode`.  No manual action should be required, but you can restart the servers as needed while in maintenance mode without repercussions.
+When maintenance mode is switched on, the servers will log `Entering maintenance mode`, immediately shut off datastore access, and exit at random intervals over the next minute to be restarted by the container.  After restarting, they'll log `Waiting for maintenance mode to end` and, once you turn maintenance mode off, `Exiting maintenance mode`.  No manual action should be required, but you can restart the servers as needed while in maintenance mode without repercussions.
 
 When maintenance mode is switched on, clients will immediately shut off datastore access and show a modal overlay (sample below)  Users will need to manually reload the page once maintenance mode is switched off so you may want to provide an estimated time of completion in the message above.
 
-![Maintenance overlay](https://raw.githubusercontent.com/Reviewable/Reviewable/master/enterprise/maintenance.png)
+![Maintenance overlay](https://raw.githubusercontent.com/Reviewable/Reviewable/master/enterprise/images/maintenance.png)
 
 #### Exiting maintenance mode
 
@@ -59,10 +59,8 @@ Note that if you choose to rotate your RSA key then you must never downgrade you
 1. Generate a new encryption key (`openssl genrsa -out private.pem 4096`).
 2. Add the new key to the end of the `REVIEWABLE_ENCRYPTION_PRIVATE_KEYS` environment variable, comma-separated from any old keys, and restart your servers.  This is necessary to ensure that all servers have the new key before the clients start using it to encrypt data.  If you don't do rolling upgrades on your servers (i.e., all servers are shut down before new ones are deployed) then you can safely skip this step.
 3. Move the new key to the front of `REVIEWABLE_ENCRYPTION_PRIVATE_KEYS` and restart your servers.
-4. Install `npm install --global reviewable-enterprise-tools` and make sure you can run `rotate_rsa_key --help`.
-5. Define `REVIEWABLE_FIREBASE`, `REVIEWABLE_FIREBASE_AUTH`, and `REVIEWABLE_ENCRYPTION_PRIVATE_KEYS` in your shell just like on your servers.
-6. Run `rotate_rsa_key`.  The command is idempotent and can be rerun as necessary.  It shouldn't take more than a few minutes.
-7. At your convenience, remove any old keys from `REVIEWABLE_ENCRYPTION_PRIVATE_KEYS` and restart your servers.
+4. Wait for the `sweepUsers` cron job to run.  It normally runs once a month and leaves the messages "`Running background task sweepUsers`" and "`Background task sweepUsers complete`" in the logs.  You can also trigger it to run immediately by deleting the `/queues/cron/sweepUsers/_lease/expiry` entry from the datastore via the Firebase console.
+5. At your convenience, remove any old keys from `REVIEWABLE_ENCRYPTION_PRIVATE_KEYS` and restart your servers.
 
 ### Data migration from reviewable.io
 
